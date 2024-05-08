@@ -1,0 +1,8 @@
+{
+  "name": "tomato.C to panel",
+  "description": "tomato.c to panel",
+  "uuid": "tomato-c-to-panel@thomas-philippot.dev",
+  "shell-version": [
+    "46"
+  ]
+}
