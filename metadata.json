@@ -1,8 +1,9 @@
 {
   "name": "tomato.C to panel",
-  "description": "tomato.c to panel",
+  "description": "Add tomato.c pomodoro timer to the gnome panel",
   "uuid": "tomato-c-to-panel@thomas-philippot.dev",
   "shell-version": [
     "46"
-  ]
+  ],
+  "url": "https://github.com/Thomas-Philippot/tomato.c-to-panel"
 }
