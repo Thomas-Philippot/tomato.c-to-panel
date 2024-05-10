@@ -50,12 +50,40 @@ export default class IndicatorExampleExtension extends Extension {
         return true;
     }
 
-    getStatus() {
-        let [success, stdout, stderr] = GLib.spawn_command_line_sync("tomato -t");
-        if (success) {
-            return stdout.toString();
-        } else {
-            return 'Error: ' + stderr.toString();
+    async getStatus() {
+        return await this.execCommunicate(['tomato -t'], null, null);
+    }
+
+    async execCommunicate(argv, input = null, cancellable = null) {
+        let cancelId = 0;
+        let flags = Gio.SubprocessFlags.STDOUT_PIPE |
+            Gio.SubprocessFlags.STDERR_PIPE;
+
+        if (input !== null)
+            flags |= Gio.SubprocessFlags.STDIN_PIPE;
+
+        const proc = new Gio.Subprocess({argv, flags});
+        proc.init(cancellable);
+
+        if (cancellable instanceof Gio.Cancellable)
+            cancelId = cancellable.connect(() => proc.force_exit());
+
+        try {
+            const [stdout, stderr] = await proc.communicate_utf8_async(input, null);
+
+            const status = proc.get_exit_status();
+
+            if (status !== 0) {
+                throw new Gio.IOErrorEnum({
+                    code: Gio.IOErrorEnum.FAILED,
+                    message: stderr ? stderr.trim() : `Command '${argv}' failed with exit code ${status}`,
+                });
+            }
+
+            return stdout;
+        } finally {
+            if (cancelId > 0)
+                cancellable.disconnect(cancelId);
         }
     }
 
