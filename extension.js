@@ -18,6 +18,7 @@
 
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
@@ -45,13 +46,12 @@ class Indicator extends PanelMenu.Button {
 });
 
 export default class IndicatorExampleExtension extends Extension {
-    update() {
-        this._indicator.updateText(this.getStatus())
+    async update() {
+        const status = await this.execCommunicate(['tomato', '-t']).catch((e) => {
+            console.log(e)
+        });
+        this._indicator.updateText(status)
         return true;
-    }
-
-    async getStatus() {
-        return await this.execCommunicate(['tomato -t'], null, null);
     }
 
     async execCommunicate(argv, input = null, cancellable = null) {
@@ -69,6 +69,7 @@ export default class IndicatorExampleExtension extends Extension {
             cancelId = cancellable.connect(() => proc.force_exit());
 
         try {
+            Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'communicate_utf8_finish');
             const [stdout, stderr] = await proc.communicate_utf8_async(input, null);
 
             const status = proc.get_exit_status();
@@ -80,7 +81,7 @@ export default class IndicatorExampleExtension extends Extension {
                 });
             }
 
-            return stdout;
+            return stdout.toString();
         } finally {
             if (cancelId > 0)
                 cancellable.disconnect(cancelId);
@@ -91,7 +92,7 @@ export default class IndicatorExampleExtension extends Extension {
         this._indicator = new Indicator();
         Main.panel.addToStatusArea(this.uuid, this._indicator);
         this.timeout = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
-            this.update()
+            this.update().then(() => {})
             return GLib.SOURCE_CONTINUE;
         });
     }
